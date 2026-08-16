@@ -64,7 +64,7 @@ fi
 # and then does nothing. Rewriting both to the loopback authority is what makes the app work
 # through a proxy without weakening its binding policy.
 #
-# /railway-health is answered by Caddy itself and is deliberately NOT authenticated: Railway's
+# /healthz is answered by Caddy itself and is deliberately NOT authenticated: Railway's
 # healthcheck cannot present credentials. It exposes nothing - it is a static 200 from the proxy
 # and never reaches dsh. Liveness of the agent itself is handled by the supervision below: if dsh
 # dies, the container exits and Railway restarts it, so a dead agent never keeps answering 200.
@@ -76,7 +76,7 @@ cat > /etc/caddy/Caddyfile <<CADDY
 }
 
 :${PUBLIC_PORT} {
-	handle /railway-health {
+	handle /healthz {
 		respond "ok" 200
 	}
 

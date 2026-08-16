@@ -38,7 +38,7 @@ Auth cannot be disabled. An empty password is treated as "not supplied", not "no
 entrypoint generates one, persists it on the volume at `$DSH_HOME/.dashboard-password`, and prints
 it once to the container log.
 
-The wrapper also honours Railway's injected `PORT`, answers an unauthenticated `/railway-health` at
+The wrapper also honours Railway's injected `PORT`, answers an unauthenticated `/healthz` at
 the proxy (Railway's health prober cannot present credentials), and supervises both processes so a
 dead agent takes the container down instead of sitting behind a green healthcheck.
 
