@@ -10,6 +10,10 @@ Two flavors, same harness and same access gate:
 | `ubuntu/` | `ghcr.io/bon5co/deepseek-harness-railway` | `ubuntu:24.04` + Node 24 |
 | `nixos/` | `ghcr.io/bon5co/deepseek-harness-nixos-railway` | digest-pinned `nixos/nix` |
 
+**If you are here because `dsh` refused to bind a public address**, read
+[REMOTE-ACCESS.md](./REMOTE-ACCESS.md) — it is the host-agnostic answer (a Caddyfile and a shell
+script, no Railway involved) plus the two mistakes that make a naive reverse proxy fail.
+
 ## What the wrapper adds
 
 DeepSeek Harness ships **no authentication**. Upstream states this in
