@@ -20,8 +20,10 @@ jobs:
         include:
           - flavor: ubuntu
             image: deepseek-harness-railway
+            version: 0.2.0-rc.2
           - flavor: nixos
             image: deepseek-harness-nixos-railway
+            version: 0.1.0-rc.6
     steps:
       - uses: actions/checkout@v4
 
@@ -39,6 +41,6 @@ jobs:
           push: true
           tags: |
             ghcr.io/bon5co/${{ matrix.image }}:latest
-            ghcr.io/bon5co/${{ matrix.image }}:0.1.0-rc.6
+            ghcr.io/bon5co/${{ matrix.image }}:${{ matrix.version }}
           cache-from: type=gha,scope=${{ matrix.flavor }}
           cache-to: type=gha,mode=max,scope=${{ matrix.flavor }}

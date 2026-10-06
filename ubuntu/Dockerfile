@@ -95,9 +95,9 @@ RUN set -eux; \
 # the version, so a floating tag would break their deploy on an upstream release.
 #
 # Note the bundle packages' npm `latest` dist-tags are stale (dsh-web-app latest is 0.0.1-rc.1),
-# but the ^0.1.0-rc.6 ranges inside this manifest resolve correctly. Never install those by bare
+# but the exact-version ranges inside this manifest resolve correctly. Never install those by bare
 # name.
-ARG DSH_VERSION=0.1.0-rc.6
+ARG DSH_VERSION=0.2.0-rc.2
 RUN mkdir -p /opt/npm \
  && npm install -g --no-fund --no-audit "@deepseek-ai/dsh@${DSH_VERSION}" \
  && npm cache clean --force \
@@ -106,36 +106,39 @@ RUN mkdir -p /opt/npm \
 # Force host-backed settings persistence. THIS IS ONLY CORRECT BEHIND THE PROXY IN THIS IMAGE.
 #
 # The DSH client decides where a settings namespace is stored with
-#   new SettingsScopeController(connection.api, spec, connection.isLoopback ? "host" : "memory")
-# (@deepseek-ai/dsh-client-ui-settings/lib/client.js) and the same expression for the welcome
-# notice in dsh-client-ui-settings-models. `connection.isLoopback` is computed from the BROWSER's
-# own page hostname (isLoopbackHostname() in @deepseek-ai/dsh-client-connection). It is a
-# client-side PREDICTION that the Host would refuse a settings RPC from a non-loopback page, and
-# when it predicts refusal the controller short-circuits every read and write into process memory:
-# nothing is ever sent, nothing is stored, settings silently reset on reload and the
-# Settings -> Plugins tab renders empty because its `writable` flag never arrives. Upstream
-# discussions #849 and #2403 are this.
+#   const persistence = ctx.remote.$host.isLoopback ? "host" : "memory";
+# (@deepseek-ai/dsh-client-ui-settings/lib/client.js; before 0.2.0 it was
+# `new SettingsScopeController(connection.api, spec, connection.isLoopback ? "host" : "memory")`
+# there and again in dsh-client-ui-settings-models for the welcome notice, which now takes its mode
+# from the scope this site builds). `isLoopback` is computed from the BROWSER's own page hostname
+# (isLoopbackHostname() in @deepseek-ai/dsh-client-connection). It is a client-side PREDICTION that
+# the Host would refuse a settings RPC from a non-loopback page, and when it predicts refusal the
+# controller short-circuits every read and write into process memory: nothing is ever sent,
+# nothing is stored, settings silently reset on reload and the Settings -> Plugins tab renders
+# empty because its `writable` flag never arrives. Upstream discussions #849 and #2403 are this.
 #
 # In THIS image that prediction is wrong. Nobody reaches DSH from a browser directly: dsh binds
 # 127.0.0.1:3080 and Caddy owns the public port, and railway-entrypoint.sh rewrites the request
 # with `header_up Host 127.0.0.1:3080` and `header_up Origin http://127.0.0.1:3080`. The Host
-# therefore evaluates its trust fence against loopback and accepts the settings RPCs. Verified on
-# 0.1.0-rc.6 with a browser origin on a LAN address: settings.describe returns
-# `ok:true, writable:true`, settings.mutate returns `ok:true` with an incremented revision, and the
-# value lands in $DSH_HOME/settings.yaml. The same call made directly to 127.0.0.1:3080 with a
-# non-loopback Host/Origin (i.e. bypassing the proxy) is refused with 403 `forbidden` — which is
-# what the fence is for, and it is untouched by this patch. Only the client's redundant guess is
-# removed; the server-side fence and the Caddy basic-auth gate both still stand.
+# therefore evaluates its trust fence against loopback and accepts the settings RPCs. The same call
+# made directly to 127.0.0.1:3080 with a non-loopback Host/Origin (i.e. bypassing the proxy) is
+# refused with 403 `forbidden` - which is what the fence is for, and it is untouched by this patch.
+# Only the client's redundant guess is removed; the server-side fence and the Caddy basic-auth gate
+# both still stand.
 #
 # DO NOT lift this patch into an image that serves dsh to a browser WITHOUT that header rewriting.
 # There the Host really would refuse, and the writes this patch enables would fail instead of
 # degrading to memory.
 #
+# The equivalent `isLoopback` gates in dsh-client-ui-settings-general (the desktop-update badge and
+# the settings document editor) are deliberately left alone: they front host-desktop features that
+# do not exist in a container.
+#
 # The substitution asserts the exact set of files it changed and exits non-zero on any mismatch,
 # so a dsh bump that renames, moves, or adds a persistence-mode site fails the BUILD rather than
 # shipping a silent no-op that leaves the bug in place.
-RUN node -e 'const fs=require("fs"),p=require("path"),R="/opt/npm/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai",N="connection.isLoopback ? \"host\" : \"memory\"",E=["dsh-client-ui-settings/lib/client.js","dsh-client-ui-settings-models/lib/client.js"],h=[];for(const k of fs.readdirSync(R)){const d=p.join(R,k,"lib");if(!fs.existsSync(d))continue;for(const f of fs.readdirSync(d)){if(!f.endsWith(".js"))continue;const t=p.join(d,f),s=fs.readFileSync(t,"utf8");if(!s.includes(N))continue;fs.writeFileSync(t,s.split(N).join("\"host\""));h.push(k+"/lib/"+f)}}console.log("[dsh-railway] forced host settings persistence in: "+(h.join(", ")||"(none)"));if(h.sort().join(",")!==E.sort().join(",")){console.error("[dsh-railway] FATAL: settings-persistence patch sites changed in this dsh version. expected: "+E.join(", ")+" | found: "+(h.join(", ")||"(none)")+" -- re-audit dsh before shipping.");process.exit(1)}' \
- && ! grep -rq 'isLoopback ? "host" : "memory"' /opt/npm/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/
+RUN node -e 'const fs=require("fs"),p=require("path"),R="/opt/npm/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai",N="ctx.remote.$host.isLoopback ? \"host\" : \"memory\"",E=["dsh-client-ui-settings/lib/client.js"],h=[];for(const k of fs.readdirSync(R)){const d=p.join(R,k,"lib");if(!fs.existsSync(d))continue;for(const f of fs.readdirSync(d)){if(!f.endsWith(".js"))continue;const t=p.join(d,f),s=fs.readFileSync(t,"utf8");if(!s.includes(N))continue;fs.writeFileSync(t,s.split(N).join("\"host\""));h.push(k+"/lib/"+f)}}console.log("[dsh-railway] forced host settings persistence in: "+(h.join(", ")||"(none)"));if(h.sort().join(",")!==E.sort().join(",")){console.error("[dsh-railway] FATAL: settings-persistence patch sites changed in this dsh version. expected: "+E.join(", ")+" | found: "+(h.join(", ")||"(none)")+" -- re-audit dsh before shipping.");process.exit(1)}' \
+ && ! grep -rq 'remote.$host.isLoopback ? "host" : "memory"' /opt/npm/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/
 
 # Everything stateful lives under /home/dsh so ONE volume covers it. DSH keeps all user data under
 # a single root (packages/util/home-paths/src/index.ts: resolveDshHome precedence is explicit

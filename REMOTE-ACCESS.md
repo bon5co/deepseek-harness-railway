@@ -135,6 +135,11 @@ const controller = new SettingsScopeController(
 );
 ```
 
+(0.1.0-rc.6 shape. From 0.2.0 the same decision is `const persistence = ctx.remote.$host.isLoopback
+? "host" : "memory";` in the same file, and the Ubuntu image patches that. In 0.2.0-rc.2 a changed
+setting lands in `$DSH_HOME/profiles/web/cordis.patch.yml` on the volume, not `settings.yaml`.
+The nix image stays on 0.1.0-rc.6 and its patch.)
+
 `connection.isLoopback` comes from `isLoopbackHostname()` applied to the **browser's** URL
 hostname. Header rewriting changes what the *server* sees; it cannot change `location.hostname`.
 So behind any reverse proxy, every settings namespace is constructed with `persistence: "memory"`
