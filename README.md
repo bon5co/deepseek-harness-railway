@@ -1,5 +1,13 @@
 # deepseek-harness-railway
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/deepseek-harness-or-just-updated-deepsee?referralCode=Z1xivh&utm_medium=integration&utm_source=template&utm_campaign=generic)
+
+**Deploy on Railway:** [DeepSeek Harness template](https://railway.com/deploy/deepseek-harness-or-just-updated-deepsee?referralCode=Z1xivh&utm_medium=integration&utm_source=template&utm_campaign=generic)
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/deepseek-harness-on-nixos-or-just-update?referralCode=Z1xivh&utm_medium=integration&utm_source=template&utm_campaign=generic)
+
+**Deploy on Railway:** [DeepSeek Harness on NixOS template](https://railway.com/deploy/deepseek-harness-on-nixos-or-just-update?referralCode=Z1xivh&utm_medium=integration&utm_source=template&utm_campaign=generic)
+
 Railway wrapper images for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
 (`dsh`), DeepSeek's open-source agent harness (MIT).
 
